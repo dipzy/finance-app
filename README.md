@@ -70,6 +70,11 @@ npm test
 More detail (endpoints, data rules, testing against PostgreSQL, deployment) is in
 [`backend/README.md`](backend/README.md) and [`frontend/README.md`](frontend/README.md), written in Portuguese.
 
+## How this was built
+
+Developed with AI coding agents (Claude Code and Cursor). I defined the product, the architecture and the business
+rules, directed and reviewed every change, tested it, and run the app in production for my own finances.
+
 ## License
 
 © 2026 Diogo Pereira. All rights reserved. The code is published so it can be read as a portfolio piece; it may not be
