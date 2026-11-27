@@ -1,0 +1,28 @@
+# Render Blueprint: a API (.NET) como web service gratuito, a partir do Dockerfile em backend/.
+# No Render: New > Blueprint > escolher este repositório. Ver backend/README.md ("Publicar").
+services:
+  - type: web
+    name: financas-api
+    runtime: docker
+    plan: free
+    region: frankfurt
+    # Caminhos a partir da raiz do repositório
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    # Só volta a publicar quando muda alguma coisa na pasta backend/
+    buildFilter:
+      paths:
+        - backend/**
+    # Só publica depois de o CI (GitHub Actions) passar no commit; ver "Publicar" em backend/README.md
+    autoDeployTrigger: checksPass
+    # Não toca na base de dados: serve também para o "keep-alive" (cron-job.org)
+    healthCheckPath: /saude
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: Firebase__ProjectId
+        value: financas-app-2ffc6
+      # Ligação à base de dados da Neon (formato URI ou Host=...;Database=...). Secreta: o Render
+      # pede o valor ao criar o Blueprint e nunca fica no repositório
+      - key: ConnectionStrings__Financas
+        sync: false

@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Camada de negócio: regras (Calculos), serviços, DTOs e mapeamentos.
+       Usa a DAL através dos repositórios e da unidade de trabalho; não expõe entidades nem EF Core. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Financas.Services</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Financas.DAL\Financas.DAL.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.12" />
+    <PackageReference Include="PdfPig" Version="0.1.16" />
+    <PackageReference Include="QuestPDF" Version="2026.9.1" />
+  </ItemGroup>
+
+  <!-- A letra do relatório PDF (Inter, licença OFL) vai com a aplicação, na pasta Fontes/ ao lado das DLLs
+       (também no publish e no Docker): o PDF fica igual no PC e no Render, que não tem fontes instaladas -->
+  <ItemGroup>
+    <None Include="Relatorios/Fontes/*.ttf;Relatorios/Fontes/OFL.txt" Link="Fontes/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Financas.Services.Tests" />
+  </ItemGroup>
+
+</Project>

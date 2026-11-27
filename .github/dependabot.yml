@@ -1,0 +1,58 @@
+# Atualizações automáticas de dependências: abre pull requests semanais (segunda-feira de manhã).
+# Agrupa as atualizações minor/patch num só PR por ecossistema; as major vêm separadas.
+version: 2
+updates:
+  # App (Expo), em frontend/. O Expo fixa as versões compatíveis com o SDK (expo install --check),
+  # por isso o Expo e o React Native atualizam-se à mão, com o SDK.
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: Europe/Lisbon
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor-patch:
+        update-types: [minor, patch]
+    # Tudo o que o Expo SDK fixa (expo install --check) atualiza-se com o SDK, nunca pacote a pacote:
+    # no 0.x até uma "minor" é um salto grande (react-native 0.81 -> 0.87).
+    ignore:
+      - dependency-name: "expo"
+      - dependency-name: "expo-*"
+      - dependency-name: "@expo/*"
+      - dependency-name: "react"
+      - dependency-name: "react-dom"
+      - dependency-name: "react-test-renderer"
+      - dependency-name: "react-native"
+      - dependency-name: "react-native-*"
+      - dependency-name: "@react-native/*"
+      - dependency-name: "@react-native-community/*"
+      - dependency-name: "jest-expo"
+      - dependency-name: "@types/react"
+      - dependency-name: "typescript"
+
+  # API (.NET), em backend/ (procura os .csproj sozinho)
+  - package-ecosystem: nuget
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: Europe/Lisbon
+    open-pull-requests-limit: 5
+    groups:
+      nuget-minor-patch:
+        update-types: [minor, patch]
+
+  # Versões das actions usadas em .github/workflows
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: Europe/Lisbon
+    groups:
+      actions-minor-patch:
+        update-types: [minor, patch]

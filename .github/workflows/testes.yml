@@ -1,0 +1,127 @@
+# Em cada push e pull request: verificar os tipos e correr os testes da app e da API.
+# Se algo falhar, o commit fica marcado a vermelho no GitHub.
+name: Testes
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  # A app (Expo), na pasta frontend/
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+
+      - name: TypeScript
+        run: npx tsc --noEmit
+
+      # Cobertura só para consulta (sem limiares): resumo no run e relatório completo no artefacto
+      - name: Testes (com cobertura)
+        run: npx jest --ci --coverage --coverageReporters=json-summary --coverageReporters=lcov --coverageReporters=text-summary
+
+      - name: Resumo da cobertura
+        if: always()
+        run: node ../.github/scripts/resumo-cobertura-jest.cjs
+
+      - name: Guardar a cobertura
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: cobertura-frontend
+          path: frontend/coverage/
+          if-no-files-found: ignore
+          retention-days: 30
+
+  # A API (.NET), na pasta backend/: compilar a solução e correr os testes.
+  # Primeiro os de SQLite em memória (rápidos), depois os mesmos cenários contra um PostgreSQL
+  # verdadeiro num contentor Docker (Testcontainers), com as migrações a sério.
+  backend:
+    runs-on: ubuntu-latest
+    env:
+      # Aqui há Docker: os testes com PostgreSQL têm de correr. Se o Docker faltar, falham em vez
+      # de aparecerem só como ignorados (e o CI ficar verde sem os ter corrido).
+      FINANCAS_TESTES_POSTGRES: obrigatorio
+      # Em Europe/Lisbon (como o PC) e não em UTC (como o Render): uma hora gravada com o offset
+      # local (+01:00) em vez de UTC, que o PostgreSQL recusa em "timestamp with time zone", só
+      # aparece fora de UTC.
+      TZ: Europe/Lisbon
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Compilar
+        run: dotnet build backend/Financas.sln
+
+      - name: Testes da API (SQLite)
+        run: dotnet test backend/Financas.sln --no-build --filter "BaseDeDados!=PostgreSQL" --collect:"XPlat Code Coverage" --results-directory coverage/sqlite
+
+      - name: Testes com PostgreSQL (Docker)
+        run: |
+          docker version --format 'Docker {{.Server.Version}}'
+          dotnet test backend/tests/Financas.Services.Tests --no-build --filter "BaseDeDados=PostgreSQL" --logger "console;verbosity=normal" --collect:"XPlat Code Coverage" --results-directory coverage/postgres
+
+      # Junta a cobertura dos dois passos (só o código da API, sem os testes). Só para consulta, sem limiares.
+      - name: Relatório de cobertura
+        if: always()
+        run: |
+          dotnet tool install --global dotnet-reportgenerator-globaltool
+          reportgenerator -reports:"coverage/**/coverage.cobertura.xml" -targetdir:coverage/relatorio             -reporttypes:"Html;MarkdownSummaryGithub;TextSummary" -assemblyfilters:"+Financas.*;-*Tests*" || exit 0
+          if [ -f coverage/relatorio/SummaryGithub.md ]; then
+            { echo "## Cobertura da API (.NET)"; echo; cat coverage/relatorio/SummaryGithub.md; } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Guardar a cobertura
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: cobertura-backend
+          path: coverage/relatorio/
+          if-no-files-found: ignore
+          retention-days: 30
+
+  # Avisa (sem bloquear) se services/api-types.ts já não corresponde ao OpenAPI da API.
+  # Gerar de novo: "npm run gerar:api" em frontend/.
+  contrato-api:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - run: npm ci
+        working-directory: frontend
+
+      - name: Tipos da API em dia?
+        working-directory: frontend
+        run: |
+          if ! npm run --silent gerar:api -- --verificar; then
+            echo "::warning title=Contrato da API::services/api-types.ts está desatualizado ou não foi possível gerá-lo. Corre 'npm run gerar:api' em frontend/."
+            echo "## Contrato da API desatualizado" >> "$GITHUB_STEP_SUMMARY"
+            echo "Corre `npm run gerar:api` em `frontend/` e faz commit de `services/api-types.ts`." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi

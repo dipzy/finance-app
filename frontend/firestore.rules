@@ -1,0 +1,16 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Os dados passaram para a API .NET (backend/). O Firestore fica só para leitura:
+    // a app lê-o uma vez para copiar os dados de cada utilizador para a API
+    // (services/migracaoFirestore.ts), e as versões antigas da app deixam de conseguir
+    // gravar aqui (o que gravassem já não aparecia na versão nova).
+    match /users/{userId}/{document=**} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false;
+    }
+
+    // Tudo o resto fica bloqueado
+  }
+}

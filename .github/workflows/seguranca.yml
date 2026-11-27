@@ -1,0 +1,69 @@
+# Auditoria de vulnerabilidades conhecidas nas dependências (npm e NuGet).
+# Corre em cada push para o main, em cada pull request e todas as segundas-feiras às 06:00 UTC,
+# porque aparecem vulnerabilidades novas em pacotes que não mudaram. Falha se encontrar alguma.
+name: Segurança
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 6 * * 1" # segunda-feira, 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  npm:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # Só dependências que vão para a app (--omit=dev): as ferramentas de desenvolvimento
+      # (jest, expo-cli, ...) não chegam ao utilizador e geram muito ruído. Só falha com vulnerabilidades críticas (ver abaixo).
+      - name: npm audit
+        # Só críticas bloqueiam: as "altas" que sobram estão no tooling do Expo/React Native (metro, cli)
+        # e dentro do Firebase/expo-updates, e o npm só as "corrige" recuando versões (expo@44).
+        # Resolvem-se quando sair a próxima versão do SDK.
+        run: npm audit --omit=dev --audit-level=critical
+
+  nuget:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restaurar pacotes
+        run: dotnet restore backend/Financas.sln
+
+      # O "dotnet list package --vulnerable" termina sempre com 0: por isso o resultado é
+      # lido e o passo falha se aparecer alguma vulnerabilidade (diretas ou transitivas).
+      - name: Pacotes NuGet vulneráveis
+        run: |
+          set -euo pipefail
+          dotnet list backend/Financas.sln package --vulnerable --include-transitive 2>&1 | tee vulneraveis.txt
+          if grep -q "has the following vulnerable packages" vulneraveis.txt; then
+            {
+              echo "## Pacotes NuGet com vulnerabilidades"
+              echo
+              echo '```'
+              grep -E "^\s*>|has the following vulnerable packages|Project" vulneraveis.txt
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::error title=Vulnerabilidades NuGet::Há pacotes vulneráveis (ver o log). Atualiza-os ou espera pelo PR do Dependabot."
+            exit 1
+          fi
+          echo "Sem pacotes NuGet vulneráveis."

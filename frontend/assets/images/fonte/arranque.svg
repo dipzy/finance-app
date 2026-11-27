@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="grad-fundo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0B1222"/>
+      <stop offset="1" stop-color="#070B14"/>
+    </linearGradient>
+    <radialGradient id="grad-luz" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#00E5FF" stop-opacity="0.16"/>
+      <stop offset="0.55" stop-color="#7C5CFF" stop-opacity="0.07"/>
+      <stop offset="1" stop-color="#7C5CFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="grad-linha" gradientUnits="userSpaceOnUse" x1="250" y1="660" x2="742" y2="384">
+      <stop offset="0" stop-color="#00E5FF"/>
+      <stop offset="1" stop-color="#7C5CFF"/>
+    </linearGradient>
+    <linearGradient id="grad-ponto" gradientUnits="userSpaceOnUse" x1="680" y1="320" x2="800" y2="450">
+      <stop offset="0" stop-color="#A48DFF"/>
+      <stop offset="1" stop-color="#7C5CFF"/>
+    </linearGradient>
+    <linearGradient id="grad-anel" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#00E5FF" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#7C5CFF" stop-opacity="0.55"/>
+    </linearGradient>
+    <filter id="brilho" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="28"/>
+    </filter>
+  </defs>
+  <g transform="translate(512 512) scale(0.82) translate(-512 -512)" opacity="0.9">
+    <rect x="182" y="182" width="660" height="660" rx="196" fill="none" stroke="url(#grad-anel)" stroke-width="14"/>
+  </g>
+  
+  <g transform="translate(512 512) scale(0.76) translate(-512 -512)">
+    <g filter="url(#brilho)" opacity="0.85">
+      <path d="M 250 660 L 420 488 L 548 592 L 742 384" fill="none" stroke="url(#grad-linha)" stroke-width="106" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="742" cy="384" r="74.1" fill="#7C5CFF"/>
+    </g>
+    <path d="M 250 660 L 420 488 L 548 592 L 742 384" fill="none" stroke="url(#grad-linha)" stroke-width="78" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="742" cy="384" r="66.3" fill="url(#grad-ponto)"/>
+    <circle cx="742" cy="384" r="26.520000000000003" fill="#EFFFFF"/>
+  </g>
+</svg>
